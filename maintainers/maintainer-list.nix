@@ -2348,6 +2348,11 @@
     githubId = 51231053;
     name = "Daniel";
   };
+  cadkin = {
+    name = "Cameron Adkins";
+    github = "cadkin";
+    githubId = 34077838;
+  };
   cafkafk = {
     email = "christina@cafkafk.com";
     matrix = "@cafkafk:matrix.cafkafk.com";
