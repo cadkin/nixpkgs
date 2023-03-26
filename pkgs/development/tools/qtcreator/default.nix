@@ -1,3 +1,84 @@
+{
+    lib,
+    stdenv,
+    fetchurl,
+
+    qtbase,
+    qt5compat,
+    qtsvg,
+    qttools,
+    qtwebengine,
+    wrapQtAppsHook,
+
+    cmake,
+    pkg-config,
+
+    withDocumentation ? true,
+    withClangPlugin ? false
+}:
+
+stdenv.mkDerivation rec {
+    pname = "qtcreator";
+    version = "9.0.2";
+    baseVersion = builtins.concatStringsSep "." (lib.take 2 (builtins.splitVersion version));
+
+    src = fetchurl {
+        url = "http://download.qt-project.org/official_releases/${pname}/${baseVersion}/${version}/qt-creator-opensource-src-${version}.tar.xz";
+        sha256 = "eca58cc5ca0d397896940542619cf203f5962ee3c882008122272cdb721fa328";
+    };
+
+    buildInputs = [
+        qtbase
+        qt5compat
+        qtsvg
+        qttools
+        qtwebengine
+    ];
+
+    nativeBuildInputs = [
+        cmake
+        pkg-config
+        wrapQtAppsHook
+    ];
+
+    cmakeFlags = [
+        # Workaround for missing CMAKE_INSTALL_DATAROOTDIR in pkgs/development/tools/build-managers/cmake/setup-hook.sh
+        "-DCMAKE_INSTALL_DATAROOTDIR=${placeholder "out"}/share"
+
+        (lib.optional withDocumentation "-DWITH_DOCS=ON")
+        (lib.optional withDocumentation "-DWITH_ONLINE_DOCS=ON")
+    ];
+
+    meta = {
+        description = "Cross-platform IDE tailored to the needs of Qt developers";
+        longDescription = ''
+            Qt Creator is a cross-platform IDE (integrated development environment)
+            tailored to the needs of Qt developers. It includes features such as an
+            advanced code editor, a visual debugger and a GUI designer.
+        '';
+        homepage = "https://wiki.qt.io/Category:Tools::QtCreator";
+        license = "LGPL";
+        maintainers = [ lib.maintainers.akaWolf ];
+        platforms = [ "i686-linux" "x86_64-linux" "aarch64-linux" "armv7l-linux" ];
+    };
+
+    # 0001-Fix-clang-libcpp-regexp.patch was for fixing regexp that is used to
+    # find clang libc++ library include paths. By default it's not covering paths
+    # like libc++-version, which is default name for libc++ folder in nixos.
+    # ./0002-Dont-remove-clang-header-paths.patch was for forcing qtcreator to not
+    # remove system clang include paths.
+    #
+    # This single patch combines the two previous patches into one and updates the location.
+    patches = [
+        ./0001-fix-clang-headers.patch
+    ];
+
+    postInstall = ''
+        substituteInPlace $out/share/applications/org.qt-project.qtcreator.desktop --replace "Exec=qtcreator" "Exec=$out/bin/qtcreator"
+  '';
+}
+
+/*
 { mkDerivation, lib, fetchurl, fetchgit, fetchpatch
 , qtbase, qtquickcontrols, qtscript, qtdeclarative, qmake, llvmPackages_8, elfutils, perf
 , withDocumentation ? false, withClangPlugins ? true
@@ -94,3 +175,4 @@ mkDerivation rec {
     platforms = [ "i686-linux" "x86_64-linux" "aarch64-linux" "armv7l-linux" ];
   };
 }
+*/

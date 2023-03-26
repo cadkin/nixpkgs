@@ -1,0 +1,23 @@
+diff --git a/src/plugins/cppeditor/headerpathfilter.cpp b/src/plugins/cppeditor/headerpathfilter.cpp
+index da1c716b..e310186c 100644
+--- a/src/plugins/cppeditor/headerpathfilter.cpp
++++ b/src/plugins/cppeditor/headerpathfilter.cpp
+@@ -85,8 +85,8 @@ HeaderPaths::iterator resourceIterator(HeaderPaths &headerPaths)
+ {
+     // include/c++, include/g++, libc++\include and libc++abi\include
+     static const QString cppIncludes = R"((.*/include/.*(g\+\+|c\+\+).*))"
+-                                       R"(|(.*libc\+\+/include))"
+-                                       R"(|(.*libc\+\+abi/include))"
++                                       R"(|(.*libc\+\+.*\/include))"
++                                       R"(|(.*libc\+\+abi.*\/include))";
+                                        R"(|(/usr/local/include))";
+     static const QRegularExpression includeRegExp("\\A(" + cppIncludes + ")\\z");
+ 
+@@ -118,7 +118,6 @@ void removeClangSystemHeaderPaths(HeaderPaths &headerPaths)
+ 
+ void HeaderPathFilter::tweakHeaderPaths()
+ {
+-    removeClangSystemHeaderPaths(builtInHeaderPaths);
+     removeGccInternalIncludePaths();
+ 
+     auto split = resourceIterator(builtInHeaderPaths);
