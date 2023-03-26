@@ -1,0 +1,141 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 33563c04..aa10e2a4 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -21,6 +21,15 @@ set(IDE_REVISION_URL "" CACHE STRING "The IDE revision Url string.")
+ 
+ mark_as_advanced(IDE_REVISION IDE_REVISION_STR IDE_REVISION_URL)
+ 
++# Clang paths must be defined for Nix.
++if(NOT DEFINED CLANG_TIDY OR NOT DEFINED CLAZY OR NOT DEFINED CLANGD)
++    message(FATAL_ERROR "All of {CLANG_TIDY, CLAZY, CLANGD} must be defined. These must be the executables of the correponding programs.")
++endif()
++
++add_compile_definitions(NIX_CLANG_TIDY_EXEC="${CLANG_TIDY}")
++add_compile_definitions(NIX_CLAZY_EXEC="${CLAZY}")
++add_compile_definitions(NIX_CLANGD_EXEC="${CLANGD}")
++
+ project(QtCreator VERSION ${IDE_VERSION})
+ 
+ # Force C++ standard, do not fall back, do not use compiler extensions
+diff --git a/src/app/main.cpp b/src/app/main.cpp
+index 74d1ccec..9ee1b4a7 100644
+--- a/src/app/main.cpp
++++ b/src/app/main.cpp
+@@ -627,6 +627,14 @@ int main(int argc, char **argv)
+     startCrashpad(libexecPath, crashReportingEnabled);
+ #endif
+ 
++    // Force clang executable values for Nix.
++    settings->setValue("ClangTools/ClangTidyExecutable",                NIX_CLANG_TIDY_EXEC);
++    settings->setValue("ClangTools/ClazyStandaloneExecutable",          NIX_CLAZY_EXEC);
++    settings->setValue("ClangdSettings/ClangdPath",                     NIX_CLANGD_EXEC);
++    globalSettings->setValue("ClangTools/ClangTidyExecutable",          NIX_CLANG_TIDY_EXEC);
++    globalSettings->setValue("ClangTools/ClazyStandaloneExecutable",    NIX_CLAZY_EXEC);
++    globalSettings->setValue("ClangdSettings/ClangdPath",               NIX_CLANGD_EXEC);
++
+     PluginManager pluginManager;
+     PluginManager::setPluginIID(QLatin1String("org.qt-project.Qt.QtCreatorPlugin"));
+     PluginManager::setGlobalSettings(globalSettings);
+diff --git a/src/plugins/clangtools/settingswidget.cpp b/src/plugins/clangtools/settingswidget.cpp
+index e0f815ea..27da35c8 100644
+--- a/src/plugins/clangtools/settingswidget.cpp
++++ b/src/plugins/clangtools/settingswidget.cpp
+@@ -45,6 +45,11 @@ SettingsWidget::SettingsWidget()
+     m_clangTidyPathChooser->setDefaultValue(placeHolderText);
+     m_clangTidyPathChooser->setFilePath(path);
+     m_clangTidyPathChooser->setHistoryCompleter("ClangTools.ClangTidyExecutable.History");
++    m_clangTidyPathChooser->setDisabled(true);
++    m_clangTidyPathChooser->setToolTip(
++        "This option has been set programatically by Nix. If you want to change it, override the clang-tools input to the QtCreator derivation."
++    );
++
+ 
+     placeHolderText = shippedClazyStandaloneExecutable().toUserOutput();
+     path = m_settings->clazyStandaloneExecutable();
+@@ -56,6 +61,15 @@ SettingsWidget::SettingsWidget()
+     m_clazyStandalonePathChooser->setDefaultValue(placeHolderText);
+     m_clazyStandalonePathChooser->setFilePath(path);
+     m_clazyStandalonePathChooser->setHistoryCompleter("ClangTools.ClazyStandaloneExecutable.History");
++    m_clazyStandalonePathChooser->setDisabled(true);
++    m_clazyStandalonePathChooser->setToolTip(
++        "This option has been set programatically by Nix. If you want to change it, override the clazy input to the QtCreator derivation."
++    );
++
++    QLabel* nixLabel = new QLabel(tr(
++        "These paths have been set programatically by Nix. If you want to change them, override the appropriate input in the QtCreator derivation."
++    ));
++    nixLabel->setWordWrap(true);
+ 
+     m_runSettingsWidget = new RunSettingsWidget;
+     m_runSettingsWidget->fromSettings(m_settings->runSettings());
+@@ -66,6 +80,7 @@ SettingsWidget::SettingsWidget()
+         Group {
+             title(tr("Executables")),
+             Form {
++                tr(""), nixLabel, br,
+                 tr("Clang-Tidy:"), m_clangTidyPathChooser, br,
+                 tr("Clazy-Standalone:"), m_clazyStandalonePathChooser
+             }
+diff --git a/src/plugins/cppeditor/cppcodemodelsettings.cpp b/src/plugins/cppeditor/cppcodemodelsettings.cpp
+index b713583d..2bbe2055 100644
+--- a/src/plugins/cppeditor/cppcodemodelsettings.cpp
++++ b/src/plugins/cppeditor/cppcodemodelsettings.cpp
+@@ -364,7 +364,8 @@ static FilePath getClangHeadersPath(const FilePath &clangdFilePath)
+         if (includePath.exists())
+             return includePath;
+     }
+-    QTC_CHECK(false);
++    // Actually falls through here on purpose - headers are in clangd wrapper.
++    // QTC_CHECK(false);
+     return {};
+ }
+ 
+diff --git a/src/plugins/cppeditor/cppcodemodelsettingspage.cpp b/src/plugins/cppeditor/cppcodemodelsettingspage.cpp
+index 88c877cc..3b227e85 100644
+--- a/src/plugins/cppeditor/cppcodemodelsettingspage.cpp
++++ b/src/plugins/cppeditor/cppcodemodelsettingspage.cpp
+@@ -218,7 +218,11 @@ ClangdSettingsWidget::ClangdSettingsWidget(const ClangdSettings::Data &settingsD
+     d->clangdChooser.setExpectedKind(Utils::PathChooser::ExistingCommand);
+     d->clangdChooser.setFilePath(settings.clangdFilePath());
+     d->clangdChooser.setAllowPathFromDevice(true);
+-    d->clangdChooser.setEnabled(d->useClangdCheckBox.isChecked());
++    d->clangdChooser.setDisabled(true);
++    d->clangdChooser.setToolTip(
++        "This option has been set programatically by Nix. If you want to change it, override the clang-tools input to the QtCreator derivation."
++    );
++
+     using Priority = ClangdSettings::IndexingPriority;
+     for (Priority prio : {Priority::Off, Priority::Background, Priority::Low, Priority::Normal}) {
+         d->indexingComboBox.addItem(ClangdSettings::priorityToDisplayString(prio), int(prio));
+@@ -261,6 +265,11 @@ ClangdSettingsWidget::ClangdSettingsWidget(const ClangdSettings::Data &settingsD
+ 
+     const auto formLayout = new QFormLayout;
+     const auto chooserLabel = new QLabel(tr("Path to executable:"));
++    const auto nixLabel = new QLabel(tr(
++        "This option has been set programatically by Nix. If you want to change it, override the clang-tools input to the QtCreator derivation."
++    ));
++    nixLabel->setWordWrap(true);
++    formLayout->addRow(QString(), nixLabel);
+     formLayout->addRow(chooserLabel, &d->clangdChooser);
+     formLayout->addRow(QString(), &d->versionWarningLabel);
+ 
+@@ -383,12 +392,15 @@ ClangdSettingsWidget::ClangdSettingsWidget(const ClangdSettings::Data &settingsD
+ 
+     layout->addStretch(1);
+ 
+-    static const auto setWidgetsEnabled = [](QLayout *layout, bool enabled, const auto &f) -> void {
++    static const auto setWidgetsEnabled = [this](QLayout *layout, bool enabled, const auto &f) -> void {
+         for (int i = 0; i < layout->count(); ++i) {
+-            if (QWidget * const w = layout->itemAt(i)->widget())
++            if (QWidget * const w = layout->itemAt(i)->widget()) {
++                // Keep chooser disabled.
++                if (w == &d->clangdChooser) continue;
+                 w->setEnabled(enabled);
+-            else if (QLayout * const l = layout->itemAt(i)->layout())
++            } else if (QLayout * const l = layout->itemAt(i)->layout()) {
+                 f(l, enabled, f);
++            }
+         }
+     };
+     const auto toggleEnabled = [this, formLayout](const bool checked) {
