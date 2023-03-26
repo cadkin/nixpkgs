@@ -33,6 +33,7 @@ stdenv.mkDerivation rec {
 
   postInstall = ''
     wrapProgram $out/bin/clazy \
+      --suffix PATH               : "${llvmPackages.clang}/bin/"                            \
       --suffix CPATH              : "$(<${llvmPackages.clang}/nix-support/libc-cflags)"     \
       --suffix CPATH              : "${llvmPackages.clang}/resource-root/include"           \
       --suffix CPLUS_INCLUDE_PATH : "$(<${llvmPackages.clang}/nix-support/libcxx-cxxflags)" \
