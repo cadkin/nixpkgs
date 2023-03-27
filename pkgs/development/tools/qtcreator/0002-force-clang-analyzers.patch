@@ -38,28 +38,36 @@ index 74d1ccec..9ee1b4a7 100644
      PluginManager::setPluginIID(QLatin1String("org.qt-project.Qt.QtCreatorPlugin"));
      PluginManager::setGlobalSettings(globalSettings);
 diff --git a/src/plugins/clangtools/settingswidget.cpp b/src/plugins/clangtools/settingswidget.cpp
-index e0f815ea..27da35c8 100644
+index e0f815ea..010a8c44 100644
 --- a/src/plugins/clangtools/settingswidget.cpp
 +++ b/src/plugins/clangtools/settingswidget.cpp
-@@ -45,6 +45,11 @@ SettingsWidget::SettingsWidget()
+@@ -16,6 +16,7 @@
+ #include <utils/pathchooser.h>
+ 
+ #include <QCoreApplication>
++#include <QLabel>
+ 
+ using namespace Utils;
+ 
+@@ -45,6 +46,11 @@ SettingsWidget::SettingsWidget()
      m_clangTidyPathChooser->setDefaultValue(placeHolderText);
      m_clangTidyPathChooser->setFilePath(path);
      m_clangTidyPathChooser->setHistoryCompleter("ClangTools.ClangTidyExecutable.History");
 +    m_clangTidyPathChooser->setDisabled(true);
 +    m_clangTidyPathChooser->setToolTip(
-+        "This option has been set programatically by Nix. If you want to change it, override the clang-tools input to the QtCreator derivation."
++        "This option has been set programatically by Nix. If you want to change it, override the clang-tools input in the QtCreator derivation."
 +    );
 +
  
      placeHolderText = shippedClazyStandaloneExecutable().toUserOutput();
      path = m_settings->clazyStandaloneExecutable();
-@@ -56,6 +61,15 @@ SettingsWidget::SettingsWidget()
+@@ -56,6 +62,15 @@ SettingsWidget::SettingsWidget()
      m_clazyStandalonePathChooser->setDefaultValue(placeHolderText);
      m_clazyStandalonePathChooser->setFilePath(path);
      m_clazyStandalonePathChooser->setHistoryCompleter("ClangTools.ClazyStandaloneExecutable.History");
 +    m_clazyStandalonePathChooser->setDisabled(true);
 +    m_clazyStandalonePathChooser->setToolTip(
-+        "This option has been set programatically by Nix. If you want to change it, override the clazy input to the QtCreator derivation."
++        "This option has been set programatically by Nix. If you want to change it, override the clazy input in the QtCreator derivation."
 +    );
 +
 +    QLabel* nixLabel = new QLabel(tr(
@@ -69,7 +77,7 @@ index e0f815ea..27da35c8 100644
  
      m_runSettingsWidget = new RunSettingsWidget;
      m_runSettingsWidget->fromSettings(m_settings->runSettings());
-@@ -66,6 +80,7 @@ SettingsWidget::SettingsWidget()
+@@ -66,6 +81,7 @@ SettingsWidget::SettingsWidget()
          Group {
              title(tr("Executables")),
              Form {
@@ -92,7 +100,7 @@ index b713583d..2bbe2055 100644
  }
  
 diff --git a/src/plugins/cppeditor/cppcodemodelsettingspage.cpp b/src/plugins/cppeditor/cppcodemodelsettingspage.cpp
-index 88c877cc..3b227e85 100644
+index 88c877cc..58dbd815 100644
 --- a/src/plugins/cppeditor/cppcodemodelsettingspage.cpp
 +++ b/src/plugins/cppeditor/cppcodemodelsettingspage.cpp
 @@ -218,7 +218,11 @@ ClangdSettingsWidget::ClangdSettingsWidget(const ClangdSettings::Data &settingsD
@@ -102,7 +110,7 @@ index 88c877cc..3b227e85 100644
 -    d->clangdChooser.setEnabled(d->useClangdCheckBox.isChecked());
 +    d->clangdChooser.setDisabled(true);
 +    d->clangdChooser.setToolTip(
-+        "This option has been set programatically by Nix. If you want to change it, override the clang-tools input to the QtCreator derivation."
++        "This option has been set programatically by Nix. If you want to change it, override the clang-tools input in the QtCreator derivation."
 +    );
 +
      using Priority = ClangdSettings::IndexingPriority;
@@ -113,7 +121,7 @@ index 88c877cc..3b227e85 100644
      const auto formLayout = new QFormLayout;
      const auto chooserLabel = new QLabel(tr("Path to executable:"));
 +    const auto nixLabel = new QLabel(tr(
-+        "This option has been set programatically by Nix. If you want to change it, override the clang-tools input to the QtCreator derivation."
++        "This option has been set programatically by Nix. If you want to change it, override the clang-tools input in the QtCreator derivation."
 +    ));
 +    nixLabel->setWordWrap(true);
 +    formLayout->addRow(QString(), nixLabel);

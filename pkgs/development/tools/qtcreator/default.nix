@@ -1,165 +1,72 @@
 {
-    lib,
-    stdenv,
-    fetchurl,
+  lib,
+  stdenv,
+  fetchurl,
 
-    qtbase,
-    qt5compat,
-    qtsvg,
-    qttools,
-    qtwebengine,
-    wrapQtAppsHook,
+  qtbase,
+  qt5compat,
+  qtsvg,
+  qttools,
+  qtwebengine,
+  clazy,
+  clang-tools,
 
-    cmake,
-    pkg-config,
+  cmake,
+  pkg-config,
+  wrapQtAppsHook,
 
-    withDocumentation ? true,
-    withClangPlugin ? false
+  withDocumentation ? true
 }:
 
 stdenv.mkDerivation rec {
-    pname = "qtcreator";
-    version = "9.0.2";
-    baseVersion = builtins.concatStringsSep "." (lib.take 2 (builtins.splitVersion version));
-
-    src = fetchurl {
-        url = "http://download.qt-project.org/official_releases/${pname}/${baseVersion}/${version}/qt-creator-opensource-src-${version}.tar.xz";
-        sha256 = "eca58cc5ca0d397896940542619cf203f5962ee3c882008122272cdb721fa328";
-    };
-
-    buildInputs = [
-        qtbase
-        qt5compat
-        qtsvg
-        qttools
-        qtwebengine
-    ];
-
-    nativeBuildInputs = [
-        cmake
-        pkg-config
-        wrapQtAppsHook
-    ];
-
-    cmakeFlags = [
-        # Workaround for missing CMAKE_INSTALL_DATAROOTDIR in pkgs/development/tools/build-managers/cmake/setup-hook.sh
-        "-DCMAKE_INSTALL_DATAROOTDIR=${placeholder "out"}/share"
-
-        (lib.optional withDocumentation "-DWITH_DOCS=ON")
-        (lib.optional withDocumentation "-DWITH_ONLINE_DOCS=ON")
-    ];
-
-    meta = {
-        description = "Cross-platform IDE tailored to the needs of Qt developers";
-        longDescription = ''
-            Qt Creator is a cross-platform IDE (integrated development environment)
-            tailored to the needs of Qt developers. It includes features such as an
-            advanced code editor, a visual debugger and a GUI designer.
-        '';
-        homepage = "https://wiki.qt.io/Category:Tools::QtCreator";
-        license = "LGPL";
-        maintainers = [ lib.maintainers.akaWolf ];
-        platforms = [ "i686-linux" "x86_64-linux" "aarch64-linux" "armv7l-linux" ];
-    };
-
-    # 0001-Fix-clang-libcpp-regexp.patch was for fixing regexp that is used to
-    # find clang libc++ library include paths. By default it's not covering paths
-    # like libc++-version, which is default name for libc++ folder in nixos.
-    # ./0002-Dont-remove-clang-header-paths.patch was for forcing qtcreator to not
-    # remove system clang include paths.
-    #
-    # This single patch combines the two previous patches into one and updates the location.
-    patches = [
-        ./0001-fix-clang-headers.patch
-    ];
-
-    postInstall = ''
-        substituteInPlace $out/share/applications/org.qt-project.qtcreator.desktop --replace "Exec=qtcreator" "Exec=$out/bin/qtcreator"
-  '';
-}
-
-/*
-{ mkDerivation, lib, fetchurl, fetchgit, fetchpatch
-, qtbase, qtquickcontrols, qtscript, qtdeclarative, qmake, llvmPackages_8, elfutils, perf
-, withDocumentation ? false, withClangPlugins ? true
-}:
-
-let
-  # Fetch clang from qt vendor, this contains submodules like this:
-  # clang<-clang-tools-extra<-clazy.
-  clang_qt_vendor = llvmPackages_8.clang-unwrapped.overrideAttrs (oldAttrs: {
-    # file RPATH_CHANGE could not write new RPATH
-    cmakeFlags = [ "-DCMAKE_SKIP_BUILD_RPATH=ON" ];
-    src = fetchgit {
-      url = "https://code.qt.io/clang/clang.git";
-      rev = "c12b012bb7465299490cf93c2ae90499a5c417d5";
-      sha256 = "0mgmnazgr19hnd03xcrv7d932j6dpz88nhhx008b0lv4bah9mqm0";
-    };
-    unpackPhase = "";
-  });
-in
-
-mkDerivation rec {
   pname = "qtcreator";
-  version = "5.0.3";
+  version = "9.0.2";
   baseVersion = builtins.concatStringsSep "." (lib.take 2 (builtins.splitVersion version));
 
   src = fetchurl {
     url = "http://download.qt-project.org/official_releases/${pname}/${baseVersion}/${version}/qt-creator-opensource-src-${version}.tar.xz";
-    sha256 = "1sz21ijzvhf5avblikffykbqa8zdq3sbg32g2dmyxv5w211v3lvz";
+    sha256 = "eca58cc5ca0d397896940542619cf203f5962ee3c882008122272cdb721fa328";
   };
 
-  buildInputs = [ qtbase qtscript qtquickcontrols qtdeclarative elfutils.dev ] ++
-    lib.optionals withClangPlugins [ llvmPackages_8.libclang
-                                 clang_qt_vendor
-                                 llvmPackages_8.llvm ];
+  buildInputs = [
+    qtbase
+    qt5compat
+    qtsvg
+    qttools
+    qtwebengine
+  ];
 
-  nativeBuildInputs = [ qmake ];
+  nativeBuildInputs = [
+    cmake
+    pkg-config
+    wrapQtAppsHook
+  ];
 
-  # 0001-Fix-clang-libcpp-regexp.patch is for fixing regexp that is used to
-  # find clang libc++ library include paths. By default it's not covering paths
-  # like libc++-version, which is default name for libc++ folder in nixos.
-  # ./0002-Dont-remove-clang-header-paths.patch is for forcing qtcreator to not
-  # remove system clang include paths.
-  patches = [ ./0001-Fix-clang-libcpp-regexp.patch
-              ./0002-Dont-remove-clang-header-paths.patch ];
+  cmakeFlags = [
+    # Workaround for missing CMAKE_INSTALL_DATAROOTDIR in pkgs/development/tools/build-managers/cmake/setup-hook.sh
+    "-DCMAKE_INSTALL_DATAROOTDIR=${placeholder "out"}/share"
 
-  doCheck = true;
+    # Pass clang paths to CMake which in-turn makes it to compiler defs.
+    "-DCLANG_TIDY=${clang-tools}/bin/clang-tidy"
+    "-DCLAZY=${clazy}/bin/clazy-standalone"
+    "-DCLANGD=${clang-tools}/bin/clangd"
 
-  buildFlags = lib.optional withDocumentation "docs";
+    # Docs.
+    (lib.optional withDocumentation "-DWITH_DOCS=ON")
+    (lib.optional withDocumentation "-DWITH_ONLINE_DOCS=ON")
+  ];
 
-  installFlags = [ "INSTALL_ROOT=$(out)" ] ++ lib.optional withDocumentation "install_docs";
-
-  qtWrapperArgs = [ "--set-default PERFPROFILER_PARSER_FILEPATH ${lib.getBin perf}/bin" ];
-
-  preConfigure = ''
-    substituteInPlace src/plugins/plugins.pro \
-      --replace '$$[QT_INSTALL_QML]/QtQuick/Controls' '${qtquickcontrols}/${qtbase.qtQmlPrefix}/QtQuick/Controls'
-    substituteInPlace src/libs/libs.pro \
-      --replace '$$[QT_INSTALL_QML]/QtQuick/Controls' '${qtquickcontrols}/${qtbase.qtQmlPrefix}/QtQuick/Controls'
-    '' + lib.optionalString withClangPlugins ''
-    # Fix paths for llvm/clang includes directories.
-    substituteInPlace src/shared/clang/clang_defines.pri \
-      --replace '$$clean_path($${LLVM_LIBDIR}/clang/$${LLVM_VERSION}/include)' '${clang_qt_vendor}/lib/clang/8.0.0/include' \
-      --replace '$$clean_path($${LLVM_BINDIR})' '${clang_qt_vendor}/bin'
-
-    # Fix paths to libclang library.
-    substituteInPlace src/shared/clang/clang_installation.pri \
-      --replace 'LIBCLANG_LIBS = -L$${LLVM_LIBDIR}' 'LIBCLANG_LIBS = -L${llvmPackages_8.libclang.lib}/lib' \
-      --replace 'LIBCLANG_LIBS += $${CLANG_LIB}' 'LIBCLANG_LIBS += -lclang' \
-      --replace 'LIBTOOLING_LIBS = -L$${LLVM_LIBDIR}' 'LIBTOOLING_LIBS = -L${clang_qt_vendor}/lib' \
-      --replace 'LLVM_CXXFLAGS ~= s,-gsplit-dwarf,' '${lib.concatStringsSep "\n" ["LLVM_CXXFLAGS ~= s,-gsplit-dwarf," "    LLVM_CXXFLAGS += -fno-rtti"]}'
-  '';
-
-  preBuild = lib.optionalString withDocumentation ''
-    ln -s ${lib.getLib qtbase}/$qtDocPrefix $NIX_QT5_TMP/share
-  '';
+  # Patches:
+  #     0001-fix-clang-headers.patch     - Fixes regex and header issues related to clang on Nix.
+  #     0002-force-clang-analyzers.patch - Sets the QTC's clang tools to the ones in the Nix store. Can be overridden by overriding
+  #                                        this derivation's inputs.
+  patches = [
+    ./0001-fix-clang-headers.patch
+    ./0002-force-clang-analyzers.patch
+  ];
 
   postInstall = ''
-    mkdir -p $out/share/applications
-    cp share/applications/org.qt-project.qtcreator.desktop $out/share/applications
-    substituteInPlace $out/share/applications/org.qt-project.qtcreator.desktop \
-      --replace "Exec=qtcreator" "Exec=$out/bin/qtcreator"
+    substituteInPlace $out/share/applications/org.qt-project.qtcreator.desktop --replace "Exec=qtcreator" "Exec=$out/bin/qtcreator"
   '';
 
   meta = {
@@ -171,8 +78,7 @@ mkDerivation rec {
     '';
     homepage = "https://wiki.qt.io/Category:Tools::QtCreator";
     license = "LGPL";
-    maintainers = [ lib.maintainers.akaWolf ];
+    maintainers = [ lib.maintainers.cadkin lib.maintainers.akaWolf ];
     platforms = [ "i686-linux" "x86_64-linux" "aarch64-linux" "armv7l-linux" ];
   };
 }
-*/
