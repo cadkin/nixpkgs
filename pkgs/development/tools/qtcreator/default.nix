@@ -20,12 +20,12 @@
 
 stdenv.mkDerivation rec {
   pname = "qtcreator";
-  version = "9.0.2";
+  version = "10.0.0";
   baseVersion = builtins.concatStringsSep "." (lib.take 2 (builtins.splitVersion version));
 
   src = fetchurl {
     url = "http://download.qt-project.org/official_releases/${pname}/${baseVersion}/${version}/qt-creator-opensource-src-${version}.tar.xz";
-    sha256 = "eca58cc5ca0d397896940542619cf203f5962ee3c882008122272cdb721fa328";
+    sha256 = "sha256-lImCneBYk6Rii3tlga8JbEivvTHJMs2KTbMKkMUhl78=";
   };
 
   buildInputs = [
@@ -57,13 +57,11 @@ stdenv.mkDerivation rec {
   ];
 
   # Patches:
-  #     0001-fix-clang-headers.patch     - Fixes regex and header issues related to clang on Nix.
-  #     0002-force-clang-analyzers.patch - Sets the QTC's clang tools to the ones in the Nix store. Can be overridden by overriding
+  #     0001-force-clang-analyzers.patch - Sets the QTC's clang tools to the ones in the Nix store. Can be overridden by overriding
   #                                        this derivation's inputs.
-  patches = [
-    ./0001-fix-clang-headers.patch
-    ./0002-force-clang-analyzers.patch
-  ];
+  #patches = [
+  #  ./0001-force-clang-analyzers.patch
+  #];
 
   postInstall = ''
     substituteInPlace $out/share/applications/org.qt-project.qtcreator.desktop --replace "Exec=qtcreator" "Exec=$out/bin/qtcreator"
