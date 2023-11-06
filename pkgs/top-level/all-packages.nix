@@ -19903,8 +19903,8 @@ with pkgs;
 
   qtcreator = qt6Packages.callPackage ../development/tools/qtcreator {
     inherit (linuxPackages) perf;
-    stdenv = llvmPackages_14.stdenv;
-    llvmPackages = llvmPackages_14;
+    stdenv = llvmPackages_16.stdenv;
+    llvmPackages = llvmPackages_16;
   };
 
   qxmledit = libsForQt5.callPackage ../applications/editors/qxmledit {} ;
