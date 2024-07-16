@@ -30,11 +30,11 @@
 
 stdenv.mkDerivation rec {
   pname = "qtcreator";
-  version = "13.0.2";
+  version = "14.0.0-rc1";
 
   src = fetchurl {
-    url = "https://download.qt.io/official_releases/${pname}/${lib.versions.majorMinor version}/${version}/qt-creator-opensource-src-${version}.tar.xz";
-    hash = "sha256-wSXMVSJhnH+PwoBadQq5bLu1al/fw4i2yxWrda9+wM4=";
+    url = "https://download.qt.io/development_releases/${pname}/${lib.versions.majorMinor version}/${version}/qt-creator-opensource-src-${version}.tar.xz";
+    hash = "sha256-sth3z2eLef9houqAKqcS5YhKV1LOAEaUNX4og+Y3lsU=";
   };
 
   nativeBuildInputs = [
