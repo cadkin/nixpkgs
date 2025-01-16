@@ -11238,6 +11238,17 @@ with pkgs;
 
   appdaemon = callPackage ../servers/home-assistant/appdaemon.nix { };
 
+  casparcg = {
+    server = callPackage ../applications/video/casparcg/server.nix {
+      boost = boost180;
+      ffmpeg = ffmpeg_6;
+    };
+
+    client = qt6Packages.callPackage ../applications/video/casparcg/client.nix {
+      boost = boost180;
+    };
+  };
+
   cassandra_3_0 = callPackage ../servers/nosql/cassandra/3.0.nix {
     jre = jre8; # TODO: remove override https://github.com/NixOS/nixpkgs/pull/89731
     python = python2;

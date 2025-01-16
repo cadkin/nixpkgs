@@ -1,0 +1,13 @@
+diff --git a/shell/CMakeLists.txt b/shell/CMakeLists.txt
+index 9ed600649..6671523c6 100644
+--- a/shell/CMakeLists.txt
++++ b/shell/CMakeLists.txt
+@@ -100,6 +100,8 @@ casparcg_add_build_dependencies(casparcg_copy_dependencies)
+ set(OUTPUT_FOLDER "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}")
+ add_custom_command(TARGET casparcg_copy_dependencies POST_BUILD COMMAND ${CMAKE_COMMAND} -E make_directory \"${OUTPUT_FOLDER}\")
+
++install(TARGETS casparcg DESTINATION bin)
++
+ if (MSVC)
+ 	foreach(FILE_TO_COPY ${CASPARCG_RUNTIME_DEPENDENCIES_DEBUG})
+ 		get_filename_component(FOLDER_NAME "${FILE_TO_COPY}" NAME)
