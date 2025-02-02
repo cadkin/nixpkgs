@@ -6468,6 +6468,8 @@ with pkgs;
     llvmPackages_16 = llvmPackagesSet."16";
     llvmPackages_17 = llvmPackagesSet."17";
 
+    llvmPackages_20 = llvmPackagesSet."20";
+
     llvmPackages_18 = llvmPackagesSet."18";
     clang_18 = llvmPackages_18.clang;
     lld_18 = llvmPackages_18.lld;
@@ -6487,6 +6489,7 @@ with pkgs;
     llvmPackages_16
     llvmPackages_17
     llvmPackages_18
+    llvmPackages_20
     clang_18
     lld_18
     lldb_18
@@ -6496,7 +6499,10 @@ with pkgs;
     lld_19
     lldb_19
     llvm_19
-    bolt_19;
+    bolt_19
+  ;
+
+  llvmPackages_p2996 = llvmPackages_20;
 
   lorri = callPackage ../tools/misc/lorri {
     inherit (darwin.apple_sdk.frameworks) CoreServices Security;
