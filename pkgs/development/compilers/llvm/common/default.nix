@@ -33,9 +33,8 @@
   ...
 }@args:
 
-assert lib.assertMsg (lib.xor (gitRelease != null) (officialRelease != null)) (
-  "must specify `gitRelease` or `officialRelease`"
-  + (lib.optionalString (gitRelease != null) " — not both")
+assert lib.assertMsg (lib.xor (lib.xor (gitRelease != null) (officialRelease != null)) (monorepoSrc != null)) (
+  "must specify one of [ gitRelease, officialRelease, monorepoSrc ]"
 );
 
 let
@@ -50,6 +49,7 @@ let
           gitRelease
           officialRelease
           version
+          monorepoSrc'
           ;
       })
       releaseInfo
@@ -81,6 +81,12 @@ let
         path =
           let
             patches = {
+              "clang/clang-p2996-fix-libcpp-module-path.patch" = [
+                {
+                  after = "20";
+                  path = ../20;
+                }
+              ];
               "clang/gnu-install-dirs.patch" = [
                 {
                   before = "14";
@@ -104,6 +110,16 @@ let
                 {
                   before = "16";
                   path = ../12;
+                }
+              ];
+              "clang/clang-unsupported-option.patch" = [
+                {
+                  before = "20";
+                  path = ./.;
+                }
+                {
+                  after = "20";
+                  path = ../20;
                 }
               ];
               "lld/add-table-base.patch" = [
@@ -526,7 +542,7 @@ let
             # prevent clang ignoring warnings / errors for unsuppored
             # options when building & linking a source file with trailing
             # libraries. eg: `clang -munsupported hello.c -lc`
-            ./clang/clang-unsupported-option.patch
+            (metadata.getVersionFile "clang/clang-unsupported-option.patch")
           ]
           ++ lib.optional (lib.versions.major metadata.release_version == "13")
             # Revert of https://reviews.llvm.org/D100879
@@ -591,7 +607,9 @@ let
             ];
             stripLen = 1;
             hash = "sha256-1NKej08R9SPlbDY/5b0OKUsHjX07i9brR84yXiPwi7E=";
-          });
+          })
+          ++ lib.optional (lib.versions.major metadata.release_version == "20")
+            (metadata.getVersionFile "clang/clang-p2996-fix-libcpp-module-path.patch");
       };
 
       clang-unwrapped = tools.libclang;
